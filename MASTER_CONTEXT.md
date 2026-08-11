@@ -57,4 +57,8 @@ On Windows, use `scripts/1_install_dependencies.bat` followed by `scripts/2_star
 
 ## Documentation rule
 
-Update this file and the relevant `docs/` page whenever MQTT topics, payloads, units, hardware mappings, service paths, safety behaviour, dependencies, or test procedures change. Keep the control repository documentation aligned with the parent ROV integration project.
+Update this file and the relevant `docs/` page whenever NATS subjects, payloads, units, hardware mappings, service paths, safety behaviour, dependencies, or test procedures change. Every change must include a consistency check of this file; if it is not a true reflection of current behaviour, correct it in the same change. Keep the control repository documentation aligned with the parent ROV integration project. Documentation must remain current, use formal British English, and be written for readers with an engineering degree or equivalent technical experience.
+
+Where SI units are used, place a space between the numerical value and the unit symbol, for example `5 m`, `12 V`, and `20 °C`. Use the degree symbol `°` by preference for angles.
+
+The verbose portable scripting standard applies equally to Windows batch/PowerShell scripts and POSIX shell scripts on macOS, Linux, and Raspberry Pi.

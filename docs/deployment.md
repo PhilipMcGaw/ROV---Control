@@ -59,3 +59,6 @@ mosquitto_sub -h 127.0.0.1 -t '#' -v
 ```
 
 The MQTT configuration currently permits anonymous access. Restrict this before exposing the broker beyond the trusted ROV network.
+## Linux/Raspberry Pi deployment
+
+From the repository root, run `scripts/1_install_dependencies.sh` as the normal runtime user, then use `scripts/2_start_app.sh`. Control requires NATS Core at `NATS_URL` before it can start safely.

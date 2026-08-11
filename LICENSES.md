@@ -1,12 +1,11 @@
 # Licensing map
 
-The repository contains three project licences. The licence applies to the project material identified below; it does not replace the licence of third-party software, fonts, icons, libraries, sample code, or imported CAD assets.
+This repository contains project-authored control software, configuration, tests, and documentation. The licences below do not replace third-party licences.
 
 | Project material | Licence | Licence text |
 |---|---|---|
-| `Control/`, `Cockpit/`, `scripts/`, `Configs/`, and project-authored Python, JavaScript, HTML, CSS, and configuration code | PolyForm Noncommercial 1.0.0 | [`LICENSE-POLYFORM-NonCommercial-1.0.0.txt`](LICENSE-POLYFORM-NonCommercial-1.0.0.txt) |
+| `src/rov_control/`, `configs/`, `scripts/`, `tests/`, and project-authored code | PolyForm Noncommercial 1.0.0 | [`LICENSE-POLYFORM-NonCommercial-1.0.0.txt`](LICENSE-POLYFORM-NonCommercial-1.0.0.txt) |
 | Project-authored documentation, operating instructions, diagrams, and other copyrightable written or visual material | CC BY-NC-SA 4.0 | [`LICENSE-CC-BY-NC-SA-4.0.txt`](LICENSE-CC-BY-NC-SA-4.0.txt) |
-| Project-authored KiCad schematics, PCB layouts, board source, mechanical source, and other open-hardware design files | CERN-OHL-S-2.0 | [`LICENSE-CERN-OHL-S-2.0.txt`](LICENSE-CERN-OHL-S-2.0.txt) |
 
 ## Attribution and third-party material
 
