@@ -62,3 +62,4 @@ Update this file and the relevant `docs/` page whenever NATS subjects, payloads,
 Where SI units are used, place a space between the numerical value and the unit symbol, for example `5 m`, `12 V`, and `20 °C`. Use the degree symbol `°` by preference for angles.
 
 The verbose portable scripting standard applies equally to Windows batch/PowerShell scripts and POSIX shell scripts on macOS, Linux, and Raspberry Pi.
+The Control service publishes `sensor/camera/main/pitch` whenever the camera servo demand is applied. The value is the commanded servo angle relative to the 90° home position, with `0°` representing straight ahead. This is command-derived rather than physical feedback and requires bench validation.

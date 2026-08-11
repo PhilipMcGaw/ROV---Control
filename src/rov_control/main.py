@@ -124,6 +124,11 @@ def publish_nats(topic, value):
     )
     future.result(timeout=2)
 
+
+def publish_camera_pitch(servo_angle: int, home_angle: int) -> None:
+    """Publish camera inclination relative to the ROV body; zero is straight ahead."""
+    publish_nats("sensor/camera/main/pitch", int(servo_angle) - int(home_angle))
+
 def read_analog_channels():
     global analog_channels
 
@@ -196,6 +201,8 @@ def write_servo_outputs():
                             home_angle=data.home_angle,
                             current_angle=demanded_angle,
                         )
+                        if name == "Camera":
+                            publish_camera_pitch(demanded_angle, data.home_angle)
                         logger.debug(f"Set {name} (Channel {data.number}) to angle {demanded_angle}")
                 else:
                     logger.warning(f"Demanded angle {demanded_angle} for {name} is out of range (0-180)")
@@ -245,9 +252,11 @@ def setup() -> None:
         raise RuntimeError("NATS server did not become ready")
 
     logger.debug("Sending home positions to NATS and setting servos to home position")
-    for data in servo_channels.values():
+    for name, data in servo_channels.items():
         publish_nats(data.topic, data.home_angle)
         set_angle(int(data.number), int(data.home_angle))
+        if name == "Camera":
+            publish_camera_pitch(data.home_angle, data.home_angle)
     logger.debug("Setting H-bridges to off")
     publish_nats("output/hbridge/left/demand", 0)
     publish_nats("output/hbridge/right/demand", 0)
