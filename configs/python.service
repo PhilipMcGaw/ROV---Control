@@ -1,0 +1,14 @@
+[Unit]
+Description=Main Python Code loop
+After=network.target
+
+[Service]
+# User=pi
+WorkingDirectory=/home/pi/ROV/Control/
+ExecStart=/home/pi/ROV/Control/.venv/bin/python -m rov_control.main
+Restart=always
+StandardOutput=file:/home/pi/python_output.log
+StandardError=file:/home/pi/python_output.log
+
+[Install]
+WantedBy=multi-user.target
