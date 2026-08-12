@@ -2,9 +2,13 @@
 
 ## Purpose
 
+The enforceable documentation policy is `docs/documentation-policy.md`, with contributor guidance in `CONTRIBUTING.md`, current status in `docs/status.md`, and checks in `tests/test_documentation.py` and `tests/documentation_change_policy.py` using `tests/documentation_change_policy.json`.
+
 This repository contains the Raspberry Pi/SBC hardware control service for the ROV. It is intentionally separate from Cockpit so a web, media, authentication, or database problem cannot directly stop or destabilise the hardware loop.
 
 ## Runtime boundary
+
+On Linux, clone this repository as `~/ROV - Control` beside the other ROV repositories. On macOS, use a user-selected workspace beneath the home directory, for example `~/Projects/ROV/ROV - Control`. This is a documented convention only; scripts must derive paths from their own location so the repository remains movable.
 
 `src/rov_control/main.py` connects to the local Mosquitto MQTT broker, consumes actuator demands, drives servo and H-bridge outputs, samples analogue channels, and bridges serial-board messages to MQTT.
 
