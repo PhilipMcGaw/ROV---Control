@@ -30,6 +30,8 @@ Cockpit, Datalogger, and HiL/SiL communicate with this repository through the NA
 - H-bridge demands use `output/hbridge/left/demand` and `output/hbridge/right/demand`.
 - Sensor and system telemetry is published under the documented `sensor/*`, `power/*`, and `system/*` topic families.
 
+Cockpit publishes logical, namespaced robot commands; Control owns the mapping from those commands to physical motors, thrusters, servos, limits, mixing, neutral, timeouts, and emergency stop. Do not move hardware wiring or robot-specific motor mixing into Cockpit.
+
 The authoritative subject and unit references are in the NATS documentation, the shared robot-profile requirements, and `dbc.xlsx`. Check live firmware and board code before changing a subject.
 
 ## Hardware and safety
@@ -78,7 +80,7 @@ The initial deployment helper is `scripts/0_deploy_network.sh`, using NetworkMan
 
 The fallback network convention is `192.168.42.0/24`, with the robot at `192.168.42.1` and a DHCP client range beginning at `192.168.42.100`. Control may also deploy the robot hostname, Avahi/Zeroconf, and Samba prerequisites for the Cockpit media share. SMB access shall be authenticated and limited to the media directory.
 
-For the current deployment model, Wi-Fi SSIDs and passwords, NATS credentials, service tokens, API keys, and other robot deployment secrets may be stored in a local Control secrets file within the repository workspace, provided that the file is listed in `.gitignore` and is never committed. Committed configuration shall contain only non-secret structure, defaults, and an example secrets template. The deployment must verify that credential files have restrictive permissions.
+For development, reproducible test Wi-Fi and NATS credentials may be committed so the repositories are easy to move between development machines. Before robot or shared-network use, regenerate them, copy the real values into ignored Control secrets files, and protect those files with restrictive permissions. Real deployment secrets, service tokens, and API keys must not be committed or placed in the shared robot profile. Example templates should contain structure and safe test placeholders only.
 
 Update this file and the relevant `docs/` page whenever NATS subjects, payloads, units, hardware mappings, service paths, safety behaviour, dependencies, or test procedures change. Every change must include a consistency check of this file; if it is not a true reflection of current behaviour, correct it in the same change. Keep the control repository documentation aligned with the parent ROV integration project. Documentation must remain current, use formal British English, and be written for readers with an engineering degree or equivalent technical experience.
 

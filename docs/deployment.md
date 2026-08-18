@@ -66,7 +66,7 @@ From the repository root, run `scripts/1_install_dependencies.sh` as the normal 
 
 Control owns the Raspberry Pi network deployment. The supported initial implementation uses NetworkManager and `scripts/0_deploy_network.sh` to configure a wired interface, a preferred Wi-Fi client connection, and a fallback Wi-Fi hotspot. The script is intended for Raspberry Pi/Linux only and must be reviewed before use on a robot.
 
-Copy `configs/network.env.example` to `configs/network.env` and `configs/network.secrets.example` to `configs/network.secrets.env`. Set real credentials only in the ignored secrets file, then protect it with mode `600`:
+Copy `configs/network.env.example` to `configs/network.env` and `configs/network.secrets.example` to `configs/network.secrets.env`. Development test credentials may be versioned for easy relocation; before robot or shared-network use, regenerate them and put the real values in the ignored secrets file, then protect it with mode `600`:
 
 ```bash
 cp configs/network.env.example configs/network.env
