@@ -1,5 +1,7 @@
 # ROV Control — Master Context
 
+Interactive command examples assume Zsh. Shell scripts may use the interpreter declared by their shebang; documentation must keep interactive commands Zsh-compatible and identify any script-specific interpreter requirements.
+
 ## Purpose
 
 The enforceable documentation policy is `docs/documentation-policy.md`, with contributor guidance in `CONTRIBUTING.md`, current status in `docs/status.md`, and checks in `tests/test_documentation.py` and `tests/documentation_change_policy.py` using `tests/documentation_change_policy.json`.
@@ -10,15 +12,15 @@ This repository contains the Raspberry Pi/SBC hardware control service for the R
 
 On Linux, clone this repository as `~/ROV - Control` beside the other ROV repositories. On macOS, use a user-selected workspace beneath the home directory, for example `~/Projects/ROV/ROV - Control`. This is a documented convention only; scripts must derive paths from their own location so the repository remains movable.
 
-`src/rov_control/main.py` connects to the local Mosquitto MQTT broker, consumes actuator demands, drives servo and H-bridge outputs, samples analogue channels, and bridges serial-board messages to MQTT.
+`src/rov_control/main.py` connects to the local NATS Core server, consumes namespaced actuator demands, drives servo and H-bridge outputs, samples analogue channels, and publishes telemetry.
 
 ```text
-MQTT broker
+NATS Core
    ├─ demands → rov_control → GPIO / I2C / SPI / PWM / serial hardware
    └─ telemetry ← rov_control ← sensors and attached boards
 ```
 
-Cockpit and future services communicate with this repository through the MQTT contract. Do not add web-server responsibilities or browser-specific code here.
+Cockpit, Datalogger, and HiL/SiL communicate with this repository through the NATS subject contract. Do not add web-server responsibilities or browser-specific code here.
 
 ## Important interfaces
 
@@ -28,7 +30,7 @@ Cockpit and future services communicate with this repository through the MQTT co
 - H-bridge demands use `output/hbridge/left/demand` and `output/hbridge/right/demand`.
 - Sensor and system telemetry is published under the documented `sensor/*`, `power/*`, and `system/*` topic families.
 
-The authoritative topic and unit references are in `docs/mqtt.md`, the parent ROV project, and `dbc.xlsx`. Check live firmware and board code before changing a topic.
+The authoritative subject and unit references are in the NATS documentation, the shared robot-profile requirements, and `dbc.xlsx`. Check live firmware and board code before changing a subject.
 
 ## Hardware and safety
 
@@ -71,6 +73,10 @@ Robot profiles currently originate in the Cockpit repository under `configs/prof
 The shared runtime profile is initially `/etc/robot/profile.json` on the robot Raspberry Pi and is loaded during boot.
 
 Control also owns the robot networking deployment configuration. Control may deploy the Raspberry Pi's approved network configuration and is responsible at runtime for network-link status, NATS connectivity, reconnect behaviour, and safe handling of command-link loss. Cockpit and Datalogger must not be required to configure or maintain the robot network.
+
+The initial deployment helper is `scripts/0_deploy_network.sh`, using NetworkManager and the non-secret `configs/network.env` plus ignored `configs/network.secrets.env` files. It configures wired DHCP or static addressing, preferred Wi-Fi client mode, and a non-autoconnect fallback hotspot profile. Automatic client-to-hotspot failover remains a runtime feature requiring separate validation.
+
+The fallback network convention is `192.168.42.0/24`, with the robot at `192.168.42.1` and a DHCP client range beginning at `192.168.42.100`. Control may also deploy the robot hostname, Avahi/Zeroconf, and Samba prerequisites for the Cockpit media share. SMB access shall be authenticated and limited to the media directory.
 
 For the current deployment model, Wi-Fi SSIDs and passwords, NATS credentials, service tokens, API keys, and other robot deployment secrets may be stored in a local Control secrets file within the repository workspace, provided that the file is listed in `.gitignore` and is never committed. Committed configuration shall contain only non-secret structure, defaults, and an example secrets template. The deployment must verify that credential files have restrictive permissions.
 

@@ -62,3 +62,20 @@ The MQTT configuration currently permits anonymous access. Restrict this before 
 ## Linux/Raspberry Pi deployment
 
 From the repository root, run `scripts/1_install_dependencies.sh` as the normal runtime user, then use `scripts/2_start_app.sh`. Control requires NATS Core at `NATS_URL` before it can start safely.
+# Network deployment
+
+Control owns the Raspberry Pi network deployment. The supported initial implementation uses NetworkManager and `scripts/0_deploy_network.sh` to configure a wired interface, a preferred Wi-Fi client connection, and a fallback Wi-Fi hotspot. The script is intended for Raspberry Pi/Linux only and must be reviewed before use on a robot.
+
+Copy `configs/network.env.example` to `configs/network.env` and `configs/network.secrets.example` to `configs/network.secrets.env`. Set real credentials only in the ignored secrets file, then protect it with mode `600`:
+
+```bash
+cp configs/network.env.example configs/network.env
+cp configs/network.secrets.example configs/network.secrets.env
+chmod 600 configs/network.secrets.env
+sudo scripts/0_deploy_network.sh --dry-run
+sudo scripts/0_deploy_network.sh
+```
+
+The script configures one preferred Wi-Fi client profile and one non-autoconnect hotspot profile. The fallback network is `192.168.42.0/24`, with the robot at `192.168.42.1` and clients in `192.168.42.100` to `192.168.42.200`. Wi-Fi failover policy and health monitoring remain Control runtime responsibilities; the deployment script does not claim that physical failover has been validated. Wired DHCP is enabled by default, with an optional static address. Only one default gateway should be configured.
+
+The deployment also installs Avahi and Samba. Avahi advertises the configured hostname and local services. Samba configuration is intended to expose the Cockpit media directory as an authenticated `media` share with read and delete access; the share must be configured only after the media path and account have been reviewed. Do not enable guest access or expose the share outside trusted robot networks.
