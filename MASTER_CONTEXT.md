@@ -70,6 +70,10 @@ Robot profiles currently originate in the Cockpit repository under `configs/prof
 
 The shared runtime profile is initially `/etc/robot/profile.json` on the robot Raspberry Pi and is loaded during boot.
 
+Control also owns the robot networking deployment configuration. Control may deploy the Raspberry Pi's approved network configuration and is responsible at runtime for network-link status, NATS connectivity, reconnect behaviour, and safe handling of command-link loss. Cockpit and Datalogger must not be required to configure or maintain the robot network.
+
+For the current deployment model, Wi-Fi SSIDs and passwords, NATS credentials, service tokens, API keys, and other robot deployment secrets may be stored in a local Control secrets file within the repository workspace, provided that the file is listed in `.gitignore` and is never committed. Committed configuration shall contain only non-secret structure, defaults, and an example secrets template. The deployment must verify that credential files have restrictive permissions.
+
 Update this file and the relevant `docs/` page whenever NATS subjects, payloads, units, hardware mappings, service paths, safety behaviour, dependencies, or test procedures change. Every change must include a consistency check of this file; if it is not a true reflection of current behaviour, correct it in the same change. Keep the control repository documentation aligned with the parent ROV integration project. Documentation must remain current, use formal British English, and be written for readers with an engineering degree or equivalent technical experience.
 
 Where SI units are used, place a space between the numerical value and the unit symbol, for example `5 m`, `12 V`, and `20 °C`. Use the degree symbol `°` by preference for angles.
