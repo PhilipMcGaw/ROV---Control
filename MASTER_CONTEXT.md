@@ -60,6 +60,13 @@ On the deployed Raspberry Pi, use the service launcher and systemd configuration
 On Windows, use `scripts/1_install_dependencies.bat` followed by `scripts/2_start_app.bat`. These require a local or mapped drive, install portable Python without administrator rights, and do not use `uv`. Hardware imports still require a compatible Linux/Raspberry Pi environment.
 
 ## Documentation rule
+The shared robot-profile requirements are defined in the Cockpit repository's `docs/robot-profile-requirements.md` and apply to this Controller. The Controller loads the same robot profile as Cockpit, owns the robot namespace and physical actuator mappings, and remains authoritative for motor mixing, direction, limits, timeouts, neutral behaviour, and emergency stop. It must not rely on Cockpit for propulsion safety.
+
+Control exchanges logical demands, hardware status, and telemetry with the co-installed Cockpit and Datalogger services through NATS Core. Datalogger failure must not block or destabilise the control loop.
+
+Control must validate the shared profile during boot before enabling hardware outputs. If validation fails, the service must remain in a safe non-driving state and report the cause.
+
+Robot profiles currently originate in the Cockpit repository under `configs/profiles/`. Control consumes the deployed active profile and must not maintain an independently edited mapping copy.
 
 Update this file and the relevant `docs/` page whenever NATS subjects, payloads, units, hardware mappings, service paths, safety behaviour, dependencies, or test procedures change. Every change must include a consistency check of this file; if it is not a true reflection of current behaviour, correct it in the same change. Keep the control repository documentation aligned with the parent ROV integration project. Documentation must remain current, use formal British English, and be written for readers with an engineering degree or equivalent technical experience.
 
