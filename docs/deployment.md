@@ -11,7 +11,7 @@ chmod +x scripts/*.sh
 ./scripts/1_install_dependencies.sh
 ```
 
-On Windows use `scripts\\1_install_dependencies.bat`; it automatically downloads a project-local 64-bit WinPython runtime when needed and installs the shared `requirements.txt` with that runtime's `pip`. This includes Uvicorn and does not require `uv`. On macOS use the shell script without `sudo`; it automatically installs `uv`, creates `.venv`, and installs the same `requirements.txt`. On Linux/Raspberry Pi it also installs the optional broker, Nginx, Motion, and Python build packages and prints the required `dialout` guidance.
+On Windows use `scripts\\1_install_dependencies.bat`; it automatically downloads a project-local 64-bit WinPython runtime when needed and installs the shared `requirements.txt` with that runtime's `pip`. This includes Uvicorn and does not require `uv`. On macOS use the shell script without `sudo`; it automatically installs `uv`, creates `.venv`, and installs the same `requirements.txt`. On Linux/Raspberry Pi, use the Control deployment script for NetworkManager, NATS Core, Nginx, Samba, Avahi, and required system packages.
 
 The Windows bootstrap is designed for machines where users do not have administrator rights: it installs below the project directory, rejects UNC paths for predictable process/filesystem behavior, and uses portable Python plus `pip` rather than requiring system Python or `uv`. It still needs write access to the project directory and network access for first-time downloads.
 
@@ -21,13 +21,13 @@ The Windows bootstrap is designed for machines where users do not have administr
 ./scripts/2_start_app.sh
 ```
 
-On Windows use `scripts\\2_start_app.bat`. On macOS, or on Linux without deployed systemd units, the shell script starts a local Uvicorn Cockpit server and opens the browser. On a deployed Raspberry Pi it restarts Mosquitto, Motion, the Python control service, Cockpit, and Nginx; use that mode only when it is safe to interrupt the ROV.
+On Windows use `scripts\\2_start_app.bat`. On macOS, or on Linux without deployed systemd units, the shell script starts the local development service. On a deployed Raspberry Pi, use the systemd units and Control deployment scripts; restarting services may interrupt the ROV.
 
 ## Services
 
 | Service | Unit/config | Role |
 |---|---|---|
-| Mosquitto | `Configs/mosquitto.conf` | MQTT TCP and WebSocket broker |
+| NATS Core | `nats://127.0.0.1:4222` | Local service transport |
 | Nginx | `Configs/nginx.conf` | HTTP reverse proxy and static files |
 | Motion | `Configs/motion*.conf` | Camera streams |
 | Python | `Configs/python.service` | Hardware control loop |
@@ -52,13 +52,13 @@ The script copies configuration files into system locations, reloads systemd, an
 ## First checks
 
 ```bash
-systemctl status mosquitto nginx python cockpit
+systemctl status nats nginx cockpit
 curl http://127.0.0.1/
 curl http://127.0.0.1:8080/json/
-mosquitto_sub -h 127.0.0.1 -t '#' -v
+nats sub '>'
 ```
 
-The MQTT configuration currently permits anonymous access. Restrict this before exposing the broker beyond the trusted ROV network.
+NATS is currently configured for local robot services. Review authentication before exposing it beyond the trusted robot network.
 ## Linux/Raspberry Pi deployment
 
 From the repository root, run `scripts/1_install_dependencies.sh` as the normal runtime user, then use `scripts/2_start_app.sh`. Control requires NATS Core at `NATS_URL` before it can start safely.
