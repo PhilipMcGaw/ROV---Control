@@ -7,7 +7,7 @@ The Control service is a separate Linux/Raspberry Pi Python process. It drives h
 ## Implemented behaviour
 
 - Python control-service entry point under `src/rov_control/main.py`.
-- NATS-based command and telemetry boundary as described in `docs/mqtt.md` and the master context.
+- NATS-based command and telemetry boundary as described in the NATS documentation and the master context.
 - Hardware-oriented configuration and deployment scripts are present in `configs/` and `scripts/`.
 
 ## Automated-test verification
@@ -28,7 +28,7 @@ The repository does not currently record physical propulsion, GPIO, serial-board
 
 - `MASTER_CONTEXT.md`
 - `docs/documentation-policy.md`
-- `docs/mqtt.md`
+- `docs/nats.md`
 - `docs/hardware.md`
 - `docs/testing.md`
 - `src/rov_control/main.py`
