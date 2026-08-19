@@ -1,10 +1,12 @@
 from collections import namedtuple
 import asyncio
+import json
 import logging
 import os
 import threading
 import time
-from datetime import datetime
+from datetime import datetime, timezone
+from pathlib import Path
 from typing import Final, TypedDict
 import busio
 import nats
@@ -20,6 +22,11 @@ import time
 import board
 import adafruit_ads7830.ads7830
 from adafruit_ads7830.analog_in import AnalogIn
+from .time_sync import (
+    TimeSynchronisationConfig,
+    load_time_synchronisation_config,
+    parse_time_synchronisation_message,
+)
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(format="%(levelname)s: %(message)s", level=logging.INFO)
@@ -48,11 +55,29 @@ pca.frequency = 50
 
 NATS_URL = os.getenv("NATS_URL", "nats://127.0.0.1:4222")
 NATS_SUBJECT = os.getenv("NATS_SUBJECT", ">")
+ROBOT_PROFILE_PATH = Path(os.getenv("ROBOT_PROFILE_PATH", "/etc/robot/profile.json"))
 nats_data = {}
 nats_lock = threading.Lock()
 nats_client = None
 nats_loop = None
 nats_ready = threading.Event()
+
+
+def load_active_time_synchronisation_config() -> TimeSynchronisationConfig | None:
+    """Load the optional browser-clock contract once as Control starts."""
+    try:
+        config = load_time_synchronisation_config(ROBOT_PROFILE_PATH)
+    except ValueError as exc:
+        logger.error("Time synchronisation is disabled: invalid active profile %s: %s", ROBOT_PROFILE_PATH, exc)
+        return None
+    if config is None:
+        logger.warning("Browser time synchronisation is disabled: no enabled configuration in %s", ROBOT_PROFILE_PATH)
+        return None
+    logger.info("Browser time synchronisation enabled for profile %s", config.profile_id)
+    return config
+
+
+TIME_SYNCHRONISATION_CONFIG = load_active_time_synchronisation_config()
 
 ServoChannelData = namedtuple('ServoChannelData', ['number', 'topic', 'home_angle', 'current_angle'])
 
@@ -88,7 +113,77 @@ def dashboard_topic(subject):
     return subject.replace(".", "/")
 
 
+async def publish_time_synchronisation_status(
+    config: TimeSynchronisationConfig,
+    *,
+    utc_unix_ms: int,
+    offset_seconds: float,
+    status: str,
+) -> None:
+    """Publish an observational result without feeding it back into the clock handler."""
+    if nats_client is None:
+        return
+    payload = {
+        "value": utc_unix_ms,
+        "units": "ms",
+        "timestamp": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+        "profile": config.profile_id,
+        "source": "control",
+        "status": status,
+        "offset_seconds": round(offset_seconds, 3),
+    }
+    try:
+        await nats_client.publish(config.status_subject, json.dumps(payload, separators=(",", ":")).encode())
+    except Exception as exc:
+        logger.warning("Could not publish time-synchronisation status: %s", exc)
+
+
+async def handle_time_synchronisation(message) -> None:
+    """Apply one validated browser time value when the active profile permits it."""
+    config = TIME_SYNCHRONISATION_CONFIG
+    if config is None:
+        return
+    try:
+        request = parse_time_synchronisation_message(message.data, config)
+    except ValueError as exc:
+        logger.warning("Rejected browser time-synchronisation message: %s", exc)
+        return
+
+    if abs(request.offset_seconds) < config.minimum_adjustment_seconds:
+        await publish_time_synchronisation_status(
+            config,
+            utc_unix_ms=request.utc_unix_ms,
+            offset_seconds=request.offset_seconds,
+            status="within-tolerance",
+        )
+        return
+
+    try:
+        time.clock_settime(time.CLOCK_REALTIME, request.utc_unix_ms / 1_000)
+    except AttributeError:
+        logger.error("Browser time synchronisation requires Linux time.clock_settime support")
+        return
+    except PermissionError:
+        logger.error("Browser time synchronisation needs CAP_SYS_TIME; install configs/python.service and restart Control")
+        return
+    except OSError as exc:
+        logger.error("Could not apply browser time synchronisation: %s", exc)
+        return
+
+    logger.info("Updated system clock from Cockpit (offset %.3f s)", request.offset_seconds)
+    await publish_time_synchronisation_status(
+        config,
+        utc_unix_ms=request.utc_unix_ms,
+        offset_seconds=request.offset_seconds,
+        status="adjusted",
+    )
+
+
 async def on_message(message):
+    config = TIME_SYNCHRONISATION_CONFIG
+    if config is not None and message.subject == config.command_subject:
+        await handle_time_synchronisation(message)
+        return
     with nats_lock:
         nats_data[dashboard_topic(message.subject)] = message.data.decode(errors="replace")
 

@@ -7,6 +7,8 @@ User=pi
 WorkingDirectory=/home/pi/ROV---Control
 ExecStart=/home/pi/ROV---Control/.venv/bin/python -m rov_control.main
 Restart=always
+CapabilityBoundingSet=CAP_SYS_TIME
+AmbientCapabilities=CAP_SYS_TIME
 StandardOutput=file:/home/pi/python_output.log
 StandardError=file:/home/pi/python_output.log
 

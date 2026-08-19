@@ -625,6 +625,8 @@ robot:   192.168.42.1
 DHCP:    beginning at 192.168.42.100
 ```
 
+The `.42` choice is intentional: it references *The Hitchhiker's Guide to the Galaxy* and was selected because this private range is not used elsewhere in the current environment. It is a convention, not a guarantee of conflict-free use on every network; deployments must avoid overlapping networks.
+
 The exact implementation remains subject to validation against Raspberry Pi OS and NetworkManager behaviour.
 
 ### Network services
