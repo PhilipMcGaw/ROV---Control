@@ -2,6 +2,8 @@
 
 Documentation is an engineering deliverable and must be updated in the same change as the behaviour it describes.
 
+This is a hard completion requirement, not an optional follow-up. A behaviour-affecting change is incomplete until the same change set contains the relevant documentation updates and, where applicable, an updated `MASTER_CONTEXT.md`. Obsolete contradictory documentation must be corrected or removed. “To be documented later” is not an acceptable completion state.
+
 Update documentation whenever control behaviour, APIs, NATS subjects or payloads, configuration, hardware support, safety behaviour, deployment, data formats, tests, workflows, dependencies, or units change. Update `MASTER_CONTEXT.md` whenever architecture, boundaries, conventions, or validation status changes.
 
 Distinguish implemented, automated-test verified, bench-tested, production-validated, and planned or unverified behaviour. Code existence alone is not evidence of hardware or production validation.
