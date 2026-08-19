@@ -62,6 +62,19 @@ NATS is currently configured for local robot services. Review authentication bef
 ## Linux/Raspberry Pi deployment
 
 From the repository root, run `scripts/1_install_dependencies.sh` as the normal runtime user, then use `scripts/2_start_app.sh`. Control requires NATS Core at `NATS_URL` before it can start safely.
+
+## Browser-assisted clock synchronisation
+
+The installed `configs/python.service` grants Control `CAP_SYS_TIME` through `CapabilityBoundingSet` and `AmbientCapabilities`. This is required only so Control can apply a validated browser time message for an RPi without an RTC; Cockpit and the browser have no Linux clock-setting capability.
+
+After deploying an updated unit on a safe robot, run:
+
+```zsh
+sudo systemctl daemon-reload
+sudo systemctl restart rov-control
+```
+
+Use the actual installed Control unit name if it differs. The active shared profile at `/etc/robot/profile.json` must contain the enabled `time_synchronisation` configuration before Control starts. Control reports a missing or invalid profile configuration at start-up and leaves browser time synchronisation disabled. This mechanism does not replace trusted NTP and is not yet physically validated.
 # Network deployment
 
 Control owns the Raspberry Pi network deployment. The supported initial implementation uses NetworkManager and `scripts/0_deploy_network.sh` to configure a wired interface, a preferred Wi-Fi client connection, and a fallback Wi-Fi hotspot. The script is intended for Raspberry Pi/Linux only and must be reviewed before use on a robot.

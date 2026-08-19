@@ -1016,3 +1016,9 @@ When this file is supplied to a fresh AI conversation, assume:
 - no hardware validation may be invented.
 
 Before making a change, inspect the current implementation and relevant documentation rather than relying on old chat history.
+
+## Browser-assisted system time synchronisation
+
+An RPi without an RTC can start with an invalid clock. The active shared profile may enable a time-synchronisation contract. An authenticated Cockpit driver/admin browser provides UTC Unix milliseconds on page load and every 60 seconds; Cockpit relays the message on `<namespace>.cockpit.command.system.time-sync`. The browser does not access NATS or Linux hardware.
+
+Control reads the same profile at boot and accepts only the configured subject, profile identity, `ms` unit, and an accepted UTC date range. It permits a large first adjustment because an RTC-less Pi may begin near 1970, avoids changes within the configured tolerance, and emits `adjusted` or `within-tolerance` on `<namespace>.control.status.system.time-sync`. Only Control calls `time.clock_settime`; its systemd service is granted `CAP_SYS_TIME`, rather than being run as root. This is an offline bootstrap mechanism, not a trusted NTP replacement, and is implemented but not Raspberry Pi bench-tested.

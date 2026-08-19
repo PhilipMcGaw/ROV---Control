@@ -28,6 +28,10 @@ nats sub system/uptime --count 1
 
 Also verify `/ws/telemetry` in the browser, `/api/session` before and after login, anonymous view-only access, and Login/logout navigation state.
 
+### Browser-assisted time synchronisation
+
+Perform this only on a development RPi with propulsion disabled. Install the profile and `configs/python.service`, run `sudo systemctl daemon-reload`, and restart Control. Sign in to Cockpit as a driver or administrator and open a Cockpit page. Observe the configured `<namespace>.cockpit.command.system.time-sync` command and `<namespace>.control.status.system.time-sync` result with `nats sub`. Compare `date --iso-8601=seconds` with a trusted source before and after the change. Record the profile revision, systemd unit revision, observed offset, and result. Do not describe this feature as bench-tested until that evidence exists.
+
 ## 3. Serial protocol test
 
 Connect one controller with actuators disabled. Confirm that startup identification and heartbeat records are received, that malformed records do not crash the control loop, and that Adler-16 IDs match the documented topic.
