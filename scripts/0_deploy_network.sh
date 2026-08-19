@@ -71,8 +71,20 @@ if [[ "$DRY_RUN" == false ]]; then
   [[ "$permissions" == 600 || "$permissions" == 400 ]] || die "secrets file must have mode 600 or 400 (found $permissions)"
 fi
 
-nm_connection_exists() { nmcli -t -f NAME connection show | grep -Fxq "$1"; }
-interface_exists() { nmcli -t -f DEVICE device status | grep -Fxq "$1"; }
+if [[ "$DRY_RUN" == true ]]; then
+  log 'would ensure NetworkManager is enabled and running before creating connection profiles'
+else
+  systemctl enable --now NetworkManager || die 'could not enable and start NetworkManager'
+fi
+
+nm_connection_exists() {
+  [[ "$DRY_RUN" == true ]] && return 1
+  nmcli -t -f NAME connection show | grep -Fxq "$1"
+}
+interface_exists() {
+  [[ "$DRY_RUN" == true ]] && return 0
+  nmcli -t -f DEVICE device status | grep -Fxq "$1"
+}
 configure_wifi_client() {
   local client="$1" ssid="$2" password="$3" priority="$4" connection_name
   [[ "$client" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]] || die "Wi-Fi client identifier is invalid: $client"
@@ -88,6 +100,7 @@ configure_wifi_client() {
 
 log "deploying network configuration from $CONFIG_FILE"
 log "wired interface: $NETWORK_INTERFACE; Wi-Fi interface: $WIFI_INTERFACE"
+[[ "$DRY_RUN" == true ]] && log 'dry-run does not query live NetworkManager interfaces or existing profiles'
 interface_exists "$NETWORK_INTERFACE" || die "wired interface is unavailable: $NETWORK_INTERFACE"
 interface_exists "$WIFI_INTERFACE" || die "Wi-Fi interface is unavailable: $WIFI_INTERFACE"
 
@@ -115,6 +128,7 @@ if nm_connection_exists "$WIRED_CONNECTION_NAME"; then
 else
   run nmcli connection add type ethernet ifname "$NETWORK_INTERFACE" con-name "$WIRED_CONNECTION_NAME"
 fi
+run nmcli connection modify "$WIRED_CONNECTION_NAME" connection.autoconnect yes connection.autoconnect-priority 100 connection.autoconnect-retries 0
 
 if [[ "$DRY_RUN" == false ]]; then
   apt-get update
@@ -162,7 +176,7 @@ else
   run nmcli connection modify "$WIRED_CONNECTION_NAME" ipv4.method manual ipv4.addresses "$WIRED_STATIC_ADDRESS" ipv4.gateway "${WIRED_GATEWAY:-}" ipv6.method disabled
 fi
 
-run systemctl enable NetworkManager
-run systemctl restart NetworkManager
-log 'network profiles deployed; preferred Wi-Fi clients have higher autoconnect priority than the hotspot fallback'
+run nmcli connection reload
+log 'network profiles deployed without restarting NetworkManager; preferred Wi-Fi clients have higher autoconnect priority than the hotspot fallback'
+log 'existing active links are not forced down. Reboot, reconnect the link, or activate the reviewed profile with nmcli when an immediate address change is required.'
 log 'verify with: nmcli connection show; nmcli device status'

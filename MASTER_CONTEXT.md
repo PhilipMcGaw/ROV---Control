@@ -105,17 +105,21 @@ The Control service must remain capable of being developed and tested without ph
 
 NATS Core is the selected inter-service middleware.
 
-The default local NATS server is:
+The deployed local NATS server is authenticated and defaults to:
 
 ```text
-nats://127.0.0.1:4222
+nats://<configured-user>:<configured-password>@127.0.0.1:4222
 ```
 
-configured through:
+The Cockpit provisioner derives the robot-service URL from ignored Control
+secrets and installs it in the root-readable systemd environment file:
 
 ```text
-NATS_URL
+/etc/robot/nats.env
 ```
+
+`configs/nats.env` controls whether the NATS listener remains loopback-only or
+is opened, with authentication, for an explicitly trusted HiL/SiL network.
 
 Control consumes logical actuator demands and publishes hardware and sensor telemetry through NATS.
 
@@ -594,7 +598,7 @@ Attempt configured Wi-Fi client connection
           │
           ├── DHCP
           ├── gateway
-          └── captive portal
+          └── local DNS
 ```
 
 The robot should first attempt to attach to the configured local Wi-Fi network.
@@ -606,14 +610,13 @@ The fallback network provides:
 - DHCP;
 - gateway capability;
 - access to the Cockpit;
-- a captive portal.
+- local DNS.
 
-The captive portal provides both:
+The hotspot provides NetworkManager shared-mode DHCP, local DNS, and a path
+into Cockpit. A captive portal is not implemented.
 
-1. network configuration;
-2. a path into Cockpit.
-
-This is an intended architecture and requires physical validation on Raspberry Pi hardware.
+The client-preferred/hotspot-fallback behaviour is configured but requires
+physical validation on Raspberry Pi hardware.
 
 ### Fallback network
 
@@ -622,7 +625,7 @@ The current fallback convention is:
 ```text
 network: 192.168.42.0/24
 robot:   192.168.42.1
-DHCP:    beginning at 192.168.42.100
+DHCP:    NetworkManager shared-mode allocation within the subnet
 ```
 
 The `.42` choice is intentional: it references *The Hitchhiker's Guide to the Galaxy* and was selected because this private range is not used elsewhere in the current environment. It is a convention, not a guarantee of conflict-free use on every network; deployments must avoid overlapping networks.
@@ -657,18 +660,32 @@ It uses NetworkManager and:
 ```text
 configs/network.env
 configs/network.secrets.env
+configs/nats.env
 ```
 
 where the secrets file is ignored by version control.
 
-The deployment supports the intended:
+The deployment supports:
 
 - wired DHCP;
 - wired static addressing;
-- preferred Wi-Fi client mode;
-- fallback hotspot mode.
+- multiple prioritised Wi-Fi client profiles;
+- a lower-priority hotspot fallback profile;
+- authenticated NATS configuration through the Cockpit provisioner;
+- authenticated SMB/Avahi media sharing.
 
-Automatic client-to-hotspot failover remains a feature requiring separate Raspberry Pi validation.
+The Wi-Fi profiles use NetworkManager auto-connect priorities to prefer known
+networks before the hotspot. This is implemented configuration, not yet
+Raspberry Pi physically validated. Wired operation remains deliberately either
+DHCP or static; automatic wired DHCP-to-static failover and a wired DHCP server
+are not implemented. The deployment helper starts NetworkManager before it
+changes profiles, then reloads the connection definitions without restarting the
+daemon, so it does not intentionally terminate an SSH deployment session. A
+reboot, link reconnect, or explicit reviewed profile activation is required for
+an immediate address change. A wired static interface MUST NOT use the wireless
+hotspot subnet while the hotspot can be active. The `--dry-run` mode validates
+the configuration contract without querying live NetworkManager state; the
+non-dry run validates the named interfaces on the robot.
 
 ---
 

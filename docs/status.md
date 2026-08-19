@@ -9,7 +9,8 @@ The Control service is a separate Linux/Raspberry Pi Python process. It drives h
 - Python control-service entry point under `src/rov_control/main.py`.
 - NATS-based command and telemetry boundary as described in the NATS documentation and the master context.
 - Profile-driven browser-assisted clock synchronisation: Control validates the NATS message against the active profile and can call Linux `time.clock_settime` when its systemd service has `CAP_SYS_TIME`.
-- Hardware-oriented configuration and deployment scripts are present in `configs/` and `scripts/`.
+- The Cockpit canonical provisioner renders `configs/python.service` for the actual Control checkout and runtime user, grants only `CAP_SYS_TIME`, generates authenticated NATS configuration, and invokes `scripts/0_deploy_network.sh` with the ignored network configuration.
+- `scripts/0_deploy_network.sh` supports named wired profiles, one or more prioritised Wi-Fi clients, a lower-priority `192.168.42.1/24` hotspot profile, authenticated SMB media sharing, hostname configuration, and Avahi enablement.
 
 ## Automated-test verification
 
@@ -25,6 +26,7 @@ The repository does not currently record physical propulsion, GPIO, serial-board
 - Bench validation of command limits, neutral, timeout, emergency-stop, and camera-pitch feedback.
 - Production validation on the intended Raspberry Pi and attached hardware.
 - Raspberry Pi bench validation of browser-assisted time synchronisation and the deployed `CAP_SYS_TIME` service capability.
+- Raspberry Pi bench validation of the NATS systemd override, NetworkManager Wi-Fi/hotspot failover, SMB sharing, and the complete provisioning sequence.
 
 ## Important references
 
@@ -36,5 +38,7 @@ The repository does not currently record physical propulsion, GPIO, serial-board
 - `src/rov_control/main.py`
 - `src/rov_control/time_sync.py`
 - `configs/python.service`
+- `scripts/0_deploy_network.sh`
+- `run.sh`
 - `scripts/1_install_dependencies.bat`
 - `scripts/2_start_app.bat`
