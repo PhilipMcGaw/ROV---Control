@@ -5,8 +5,7 @@ Run tests in increasing order of risk. Record the date, software revision, hardw
 ## 1. Static checks
 
 ```bash
-python -m py_compile Control/main.py Cockpit/app.py
-python -m py_compile Control/main.py Cockpit/app.py Cockpit/auth.py
+python -m py_compile src/rov_control/main.py
 ```
 
 Confirm that the changed KiCad files open without recovery warnings and that firmware compiles for the selected board.

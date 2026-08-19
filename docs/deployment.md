@@ -1,6 +1,6 @@
 # Raspberry Pi deployment
 
-The checked-in deployment assumes the repository is installed at `/home/pi/ROV`.
+The Control service is installed beside Cockpit and Datalogger on the robot. The current combined provisioning layout is `/home/pi/ROV---Control`.
 
 ## One-time installation
 
@@ -35,7 +35,7 @@ On Windows use `scripts\\2_start_app.bat`. On macOS, or on Linux without deploye
 
 Camera inventory is stored in `Configs/cameras.json`. The Cockpit `/cameras/` page edits this inventory. Motion still uses its generated/deployed `.conf` files, so restart Motion after applying a matching configuration change.
 
-Cockpit media is stored below `MEDIA_ROOT` (default: `<project>/media`), with `stills/` and `videos/` subdirectories. On the Raspberry Pi, Motion writes recordings to `/home/pi/ROV/media/videos`. `MEDIA_MIN_FREE_GB` defaults to 2 GB; the oldest recordings are removed when the free-space floor is reached. The default recording segment length is 30 minutes and is stored in `Configs/media.json`.
+Cockpit media is stored below `MEDIA_ROOT` (default: `<project>/media`), with `stills/`, `videos/`, and `data/csv/` subdirectories. On the Raspberry Pi, Motion writes recordings to `/home/pi/ROV---Cockpit/media/videos`. `MEDIA_MIN_FREE_GB` defaults to 2 GB; the oldest recordings are removed when the free-space floor is reached. The default recording segment length is 30 minutes and is stored in `configs/media.json`.
 
 The Cockpit `/files/` page captures stills from the current Motion frame, displays the still gallery, lists recordings, and provides downloads. View-only access is anonymous. Driver/admin login and password management exist, but enforcement of control and every administrative route remains incomplete.
 
