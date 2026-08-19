@@ -80,7 +80,7 @@ NATS JetStream is outside the current architecture and scope.
 The documented Linux development convention is to clone this repository as:
 
 ```text
-~/ROV - Control
+~/robots/ROV---Control
 ```
 
 alongside the other ROV repositories.
@@ -88,7 +88,7 @@ alongside the other ROV repositories.
 On macOS, use a user-selected workspace beneath the home directory, for example:
 
 ```text
-~/Projects/ROV/ROV - Control
+~/Projects/ROV/ROV---Control
 ```
 
 This is a documented convention only. Scripts must derive paths from their own location so that the repository remains movable.
