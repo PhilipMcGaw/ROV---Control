@@ -4,6 +4,8 @@ set -Eeuo pipefail
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 CONFIG_FILE="${NETWORK_CONFIG:-$PROJECT_ROOT/configs/network.env}"
 SECRETS_FILE="${NETWORK_SECRETS:-$PROJECT_ROOT/configs/network.secrets.env}"
+COCKPIT_ROOT="${COCKPIT_ROOT:-$PROJECT_ROOT/../ROV---Cockpit}"
+ROBOT_RUNTIME_USER="${ROBOT_RUNTIME_USER:-pi}"
 DRY_RUN=false
 
 usage() {
@@ -41,8 +43,6 @@ source "$SECRETS_FILE"
 
 : "${NETWORK_INTERFACE:?NETWORK_INTERFACE is required}"
 : "${WIFI_INTERFACE:?WIFI_INTERFACE is required}"
-: "${WIFI_SSID:?WIFI_SSID is required}"
-: "${WIFI_PASSWORD:?WIFI_PASSWORD is required}"
 : "${HOTSPOT_SSID:?HOTSPOT_SSID is required}"
 : "${HOTSPOT_PASSWORD:?HOTSPOT_PASSWORD is required}"
 : "${FALLBACK_ROBOT_ADDRESS:?FALLBACK_ROBOT_ADDRESS is required}"
@@ -50,6 +50,20 @@ source "$SECRETS_FILE"
 : "${SMB_SHARE_NAME:?SMB_SHARE_NAME is required}"
 : "${SMB_USER:?SMB_USER is required}"
 : "${SMB_PASSWORD:?SMB_PASSWORD is required}"
+: "${WIRED_CONNECTION_NAME:=robot-wired}"
+: "${WIFI_CONNECTION_PREFIX:=robot-wifi}"
+: "${HOTSPOT_CONNECTION_NAME:=robot-hotspot}"
+
+if [[ ${WIFI_CLIENTS+x} != x ]]; then
+  : "${WIFI_SSID:?WIFI_SSID is required when WIFI_CLIENTS is not set}"
+  : "${WIFI_PASSWORD:?WIFI_PASSWORD is required when WIFI_CLIENTS is not set}"
+  WIFI_CLIENTS=(legacy)
+  WIFI_legacy_SSID="$WIFI_SSID"
+  WIFI_legacy_PASSWORD="$WIFI_PASSWORD"
+  WIFI_legacy_PRIORITY=100
+fi
+[[ "$(declare -p WIFI_CLIENTS 2>/dev/null)" == "declare -a"* ]] || die 'WIFI_CLIENTS must be a Bash array of client identifiers'
+(( ${#WIFI_CLIENTS[@]} > 0 )) || die 'WIFI_CLIENTS must include at least one preferred Wi-Fi client'
 
 [[ "$SECRETS_FILE" == "$PROJECT_ROOT"/* ]] || die 'secrets file must be within the Control project directory'
 if [[ "$DRY_RUN" == false ]]; then
@@ -58,22 +72,48 @@ if [[ "$DRY_RUN" == false ]]; then
 fi
 
 nm_connection_exists() { nmcli -t -f NAME connection show | grep -Fxq "$1"; }
+interface_exists() { nmcli -t -f DEVICE device status | grep -Fxq "$1"; }
+configure_wifi_client() {
+  local client="$1" ssid="$2" password="$3" priority="$4" connection_name
+  [[ "$client" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]] || die "Wi-Fi client identifier is invalid: $client"
+  [[ "$priority" =~ ^-?[0-9]+$ ]] || die "Wi-Fi client priority must be an integer: $client=$priority"
+  connection_name="$WIFI_CONNECTION_PREFIX-$client"
+  if nm_connection_exists "$connection_name"; then
+    run nmcli connection modify "$connection_name" connection.interface-name "$WIFI_INTERFACE" 802-11-wireless.ssid "$ssid"
+  else
+    run nmcli connection add type wifi ifname "$WIFI_INTERFACE" con-name "$connection_name" ssid "$ssid"
+  fi
+  run nmcli connection modify "$connection_name" 802-11-wireless-security.key-mgmt wpa-psk 802-11-wireless-security.psk "$password" connection.autoconnect yes connection.autoconnect-priority "$priority" connection.autoconnect-retries 0 ipv4.method auto ipv6.method auto
+}
 
 log "deploying network configuration from $CONFIG_FILE"
 log "wired interface: $NETWORK_INTERFACE; Wi-Fi interface: $WIFI_INTERFACE"
+interface_exists "$NETWORK_INTERFACE" || die "wired interface is unavailable: $NETWORK_INTERFACE"
+interface_exists "$WIFI_INTERFACE" || die "Wi-Fi interface is unavailable: $WIFI_INTERFACE"
 
-if nm_connection_exists "$WIFI_CONNECTION_NAME"; then
-  run nmcli connection modify "$WIFI_CONNECTION_NAME" connection.interface-name "$WIFI_INTERFACE" 802-11-wireless.ssid "$WIFI_SSID" 802-11-wireless-security.key-mgmt wpa-psk 802-11-wireless-security.psk "$WIFI_PASSWORD" connection.autoconnect yes connection.autoconnect-retries 3
-else
-  run nmcli connection add type wifi ifname "$WIFI_INTERFACE" con-name "$WIFI_CONNECTION_NAME" ssid "$WIFI_SSID"
-  run nmcli connection modify "$WIFI_CONNECTION_NAME" 802-11-wireless-security.key-mgmt wpa-psk 802-11-wireless-security.psk "$WIFI_PASSWORD" connection.autoconnect yes connection.autoconnect-retries 3
-fi
+for wifi_client in "${WIFI_CLIENTS[@]}"; do
+  ssid_variable="WIFI_${wifi_client}_SSID"
+  password_variable="WIFI_${wifi_client}_PASSWORD"
+  priority_variable="WIFI_${wifi_client}_PRIORITY"
+  ssid="${!ssid_variable:-}"
+  password="${!password_variable:-}"
+  priority="${!priority_variable:-100}"
+  [[ -n "$ssid" ]] || die "missing SSID for Wi-Fi client: $wifi_client"
+  [[ -n "$password" ]] || die "missing password for Wi-Fi client: $wifi_client"
+  configure_wifi_client "$wifi_client" "$ssid" "$password" "$priority"
+done
 
 if nm_connection_exists "$HOTSPOT_CONNECTION_NAME"; then
-  run nmcli connection modify "$HOTSPOT_CONNECTION_NAME" connection.interface-name "$WIFI_INTERFACE" 802-11-wireless.mode ap 802-11-wireless.ssid "$HOTSPOT_SSID" 802-11-wireless.channel "${HOTSPOT_CHANNEL:-6}" ipv4.method shared ipv4.addresses "$FALLBACK_ROBOT_ADDRESS" 802-11-wireless-security.key-mgmt wpa-psk 802-11-wireless-security.psk "$HOTSPOT_PASSWORD" connection.autoconnect no
+  run nmcli connection modify "$HOTSPOT_CONNECTION_NAME" connection.interface-name "$WIFI_INTERFACE" 802-11-wireless.mode ap 802-11-wireless.ssid "$HOTSPOT_SSID" 802-11-wireless.channel "${HOTSPOT_CHANNEL:-6}" ipv4.method shared ipv4.addresses "$FALLBACK_ROBOT_ADDRESS" ipv6.method disabled 802-11-wireless-security.key-mgmt wpa-psk 802-11-wireless-security.psk "$HOTSPOT_PASSWORD" connection.autoconnect yes connection.autoconnect-priority -100 connection.autoconnect-retries 0
 else
   run nmcli connection add type wifi ifname "$WIFI_INTERFACE" con-name "$HOTSPOT_CONNECTION_NAME" ssid "$HOTSPOT_SSID"
-  run nmcli connection modify "$HOTSPOT_CONNECTION_NAME" 802-11-wireless.mode ap 802-11-wireless.channel "${HOTSPOT_CHANNEL:-6}" ipv4.method shared ipv4.addresses "$FALLBACK_ROBOT_ADDRESS" 802-11-wireless-security.key-mgmt wpa-psk 802-11-wireless-security.psk "$HOTSPOT_PASSWORD" connection.autoconnect no
+  run nmcli connection modify "$HOTSPOT_CONNECTION_NAME" 802-11-wireless.mode ap 802-11-wireless.channel "${HOTSPOT_CHANNEL:-6}" ipv4.method shared ipv4.addresses "$FALLBACK_ROBOT_ADDRESS" ipv6.method disabled 802-11-wireless-security.key-mgmt wpa-psk 802-11-wireless-security.psk "$HOTSPOT_PASSWORD" connection.autoconnect yes connection.autoconnect-priority -100 connection.autoconnect-retries 0
+fi
+
+if nm_connection_exists "$WIRED_CONNECTION_NAME"; then
+  run nmcli connection modify "$WIRED_CONNECTION_NAME" connection.interface-name "$NETWORK_INTERFACE"
+else
+  run nmcli connection add type ethernet ifname "$NETWORK_INTERFACE" con-name "$WIRED_CONNECTION_NAME"
 fi
 
 if [[ "$DRY_RUN" == false ]]; then
@@ -83,8 +123,8 @@ if [[ "$DRY_RUN" == false ]]; then
   systemctl restart avahi-daemon
 
   id "$SMB_USER" >/dev/null || die "SMB user does not exist: $SMB_USER"
-  [[ -d "$MEDIA_ROOT" ]] || die "media directory does not exist: $MEDIA_ROOT"
-  cp -a /etc/samba/smb.conf "/etc/samba/smb.conf.backup.$(date -u +%Y%m%dT%H%M%SZ)"
+  install -d -o "$SMB_USER" -g "$(id -gn "$SMB_USER")" -m 0750 "$MEDIA_ROOT/stills" "$MEDIA_ROOT/videos" "$MEDIA_ROOT/data/csv"
+  [[ ! -f /etc/samba/smb.conf ]] || cp -a /etc/samba/smb.conf "/etc/samba/smb.conf.backup.$(date -u +%Y%m%dT%H%M%SZ)"
   cat > /etc/samba/smb.conf <<EOF
 [global]
    workgroup = WORKGROUP
@@ -116,13 +156,13 @@ if [[ -n "${ROBOT_HOSTNAME:-}" ]]; then
 fi
 
 if [[ "${WIRED_DHCP:-true}" == true ]]; then
-  run nmcli connection modify "$NETWORK_INTERFACE" ipv4.method auto ipv4.addresses '' ipv4.gateway ''
+  run nmcli connection modify "$WIRED_CONNECTION_NAME" ipv4.method auto ipv4.addresses '' ipv4.gateway '' ipv6.method auto
 else
   : "${WIRED_STATIC_ADDRESS:?WIRED_STATIC_ADDRESS is required when WIRED_DHCP=false}"
-  run nmcli connection modify "$NETWORK_INTERFACE" ipv4.method manual ipv4.addresses "$WIRED_STATIC_ADDRESS" ipv4.gateway "${WIRED_GATEWAY:-}"
+  run nmcli connection modify "$WIRED_CONNECTION_NAME" ipv4.method manual ipv4.addresses "$WIRED_STATIC_ADDRESS" ipv4.gateway "${WIRED_GATEWAY:-}" ipv6.method disabled
 fi
 
 run systemctl enable NetworkManager
 run systemctl restart NetworkManager
-log 'network profiles deployed; preferred Wi-Fi is configured to retry and hotspot is available for controlled failover'
+log 'network profiles deployed; preferred Wi-Fi clients have higher autoconnect priority than the hotspot fallback'
 log 'verify with: nmcli connection show; nmcli device status'
