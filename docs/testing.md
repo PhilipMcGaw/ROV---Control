@@ -22,8 +22,8 @@ curl http://127.0.0.1:8080/json/
 Publish a harmless test value and confirm it appears in the Cockpit dashboard:
 
 ```bash
-nats pub system/uptime '0 00:00:01'
-nats sub system/uptime --count 1
+nats pub rov.telemetry.system.uptime '{"value":1,"units":"s","profile":"rov"}'
+nats sub rov.telemetry.system.uptime --count 1
 ```
 
 Also verify `/ws/telemetry` in the browser, `/api/session` before and after login, anonymous view-only access, and Login/logout navigation state.

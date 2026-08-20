@@ -321,6 +321,24 @@ Do not place hardware-specific implementation in Cockpit.
 
 ---
 
+## Planned Adeept Robot HAT ADM133 adapter
+
+Control will provide a shared hardware adapter for the Adeept Robot HAT
+ADM133 (V3.3 family) used by K9 and PiWars. This is a Control responsibility:
+Cockpit publishes logical commands and must not access the board directly.
+
+The active robot profile will select the adapter and define its confirmed
+channel assignments and safe operating configuration. The exact board map,
+electrical connections, output directions, limits, and bench validation have
+not yet been established. This work remains planned and unverified.
+
+The adapter consumes and publishes only profile-bound logical NATS commands
+and telemetry. Its full capability-to-topic contract is in
+`docs/adeept-robot-hat-adm133.md`; raw GPIO, I2C, PWM-channel, and
+motor-channel NATS subjects are prohibited.
+
+---
+
 ## RS-485 architecture
 
 RS-485 is the preferred physical communication bus for most distributed robot nodes.

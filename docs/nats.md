@@ -2,24 +2,31 @@
 
 NATS Core is the service-to-service transport for Cockpit, Control, Datalogger, and HiL/SiL. The default local endpoint is `nats://127.0.0.1:4222`.
 
-Subjects are namespaced by service and function. Units and scaling are SI, and robot-specific hardware mappings belong in the robot profile and Control service rather than in Cockpit.
+Subjects are namespaced by function. Units and scaling are SI, and robot-specific hardware mappings belong in the robot profile and Control service rather than in Cockpit.
 
 ## Subject and payload convention
 
-NATS does not impose an application payload format. The framework uses dot-separated hierarchical subjects:
+NATS does not impose an application payload format. The profile-defined robot
+command and telemetry contract uses dot-separated hierarchical subjects:
 
 ```text
-<robot-namespace>.<service>.<message-type>.<function>
+<robot-namespace>.command.<function>
+<robot-namespace>.telemetry.<function>
 ```
 
 Examples:
 
 ```text
-rov.control.command.drive
-rov.control.telemetry.motor
-rov.cockpit.status.connection
-rov.datalogger.status.health
+rov.command.drive.throttle
+rov.telemetry.power.battery.voltage
+k9.command.animatronics.head.pan
+piwars.telemetry.sensors.line.centre
 ```
+
+Service-owned status subjects include the service name so their publisher is
+unambiguous, for example `<namespace>.control.status.<function>` and
+`<namespace>.cockpit.status.<function>`. The profile-defined time
+synchronisation subjects are a deliberate example of this form.
 
 Structured commands, telemetry, and status messages use JSON payloads. A normal structured payload contains the value, SI units where applicable, timestamp, and profile identity:
 
@@ -35,6 +42,10 @@ Structured commands, telemetry, and status messages use JSON payloads. A normal 
 NATS payloads remain arbitrary bytes at the transport level. Binary payloads may be used for specialised data, such as camera or compressed sensor data, but the subject must document the encoding explicitly. Cockpit may present subjects using slash-separated dashboard keys internally; that presentation does not change the NATS subject contract.
 
 This document records the transport boundary; individual service repositories define the subjects they implement.
+
+The planned ADM133 adapter maps board capabilities to these logical topics in
+[the Adeept Robot HAT ADM133 topic map](adeept-robot-hat-adm133.md). It must
+not create raw GPIO, I2C, PWM-channel, or motor-channel NATS subjects.
 
 ## Logical command example
 

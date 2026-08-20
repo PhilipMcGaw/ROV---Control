@@ -42,3 +42,24 @@ The second mapping is illustrative only; actual values and signs must come from 
 ## Hardware-dependent paths
 
 Historical code uses Raspberry Pi device paths such as `/dev/serial/by-id/...`. These are machine-specific and should be discovered and documented on the deployed Pi rather than copied blindly from an old test script.
+
+## Planned Adeept Robot HAT ADM133 adapter
+
+Control will provide the hardware adapter for the Adeept Robot HAT ADM133
+(V3.3 family) intended for both K9 and PiWars. It is a Control-owned shared
+driver, rather than a Cockpit feature or a separate robot-specific driver.
+
+The active robot profile will select the adapter and describe the confirmed
+channel assignments and safe operating configuration for that robot. Cockpit
+will continue to publish only logical commands. It must not access the HAT's
+GPIO, I2C, PWM, motors, servos, sensors, buzzer, or lighting functions.
+
+The exact installed-board map, electrical connections, output directions,
+limits, and emergency-stop behaviour have not yet been confirmed. The adapter
+is therefore planned and unverified: it must be tested with motors and other
+actuators made safe before it is described as bench-tested.
+
+The complete logical NATS topic map is maintained in
+[Adeept Robot HAT ADM133](adeept-robot-hat-adm133.md). It maps board functions
+to profile-owned logical command and telemetry identifiers, not to raw pins or
+physical motor channels.

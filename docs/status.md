@@ -23,6 +23,10 @@ The repository does not currently record physical propulsion, GPIO, serial-board
 ## Planned or unverified
 
 - Full automated control-loop and hardware-abstraction test coverage.
+- A shared Adeept Robot HAT ADM133 (V3.3 family) hardware adapter for K9 and
+  PiWars. Profiles will define channel assignments and safe operating
+  configuration after the installed-board map is confirmed; no physical
+  behaviour has been bench-validated.
 - Bench validation of command limits, neutral, timeout, emergency-stop, and camera-pitch feedback.
 - Production validation on the intended Raspberry Pi and attached hardware.
 - Raspberry Pi bench validation of browser-assisted time synchronisation and the deployed `CAP_SYS_TIME` service capability.
