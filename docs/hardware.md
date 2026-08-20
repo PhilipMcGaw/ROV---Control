@@ -1,6 +1,6 @@
 # Hardware interfaces
 
-The main pin and bus reference is [Pins.md](../Pins.md). The KiCad projects under `KiCAD/` are the authoritative source for board-level connectivity.
+The historical root-repository `Pins.md` is a physical-reference starting point only. The relevant KiCad project and the fitted-board commissioning record are authoritative for board-level connectivity. Do not treat a root pin table as an approved Control allocation.
 
 ## Interfaces in use
 

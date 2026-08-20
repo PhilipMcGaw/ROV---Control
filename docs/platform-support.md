@@ -1,43 +1,57 @@
 # Platform support
 
-The Cockpit web application is intended to be platform-independent. The hardware control loop has a smaller support surface because GPIO, I2C, SPI, PWM, and serial devices are platform-specific.
+Control is a Raspberry Pi/Linux hardware service. Windows and macOS are useful
+for source review, tests, and simulation, but they are not physical-control
+targets.
 
-| Capability | Windows | macOS | Linux / Raspberry Pi |
+| Capability | Windows | macOS | Raspberry Pi OS Trixie Lite 64-bit (`arm64`) |
 |---|:---:|:---:|:---:|
-| Cockpit development server | Supported | Supported | Supported |
-| NATS-backed service boundary with a local NATS Core server | Supported | Supported | Supported |
-| Camera UI and configuration inventory | UI supported; Motion not expected | UI supported; Motion not expected | Supported with Motion/Nginx |
-| Control-loop import/syntax work | Supported where dependencies install | Supported where dependencies install | Supported |
-| GPIO/I2C/SPI/PWM hardware control | Not supported | Not supported | Target platform |
-| Raspberry Pi camera and Motion service | Not supported | Not supported | Target platform |
-| Complete robot deployment baseline | Not supported | Not supported | Raspberry Pi 4/5, Raspberry Pi OS Bookworm 64-bit (`arm64`) |
+| Source, profile, and documentation checks | Supported | Supported | Supported |
+| NATS contract and mock/disconnected development | Supported where dependencies run | Supported where dependencies run | Supported |
+| Canonical robot deployment | Not supported | Not supported | Target platform on Raspberry Pi 3B+ or newer; unbench-tested |
+| GPIO, I2C, SPI, PWM, serial, camera, and HAT control | Not supported | Not supported | Target platform; requires hardware commissioning |
+| NetworkManager, SMB, Avahi, NATS, and systemd deployment | Not supported | Not supported | Target platform; requires Raspberry Pi validation |
 
-Use mock or disconnected hardware for Windows and macOS development. A successful Cockpit start does not prove that the physical control loop or camera stack is operational.
+## Raspberry Pi baseline
 
-## Browser Gamepad API
+The selected deployment baseline is **Raspberry Pi OS Trixie Lite 64-bit** on
+the Raspberry Pi 3B+ and newer 64-bit Raspberry Pi models. The 3B+'s Cortex-A53
+processor is 64-bit-capable. Lite is preferred because the robot Pi is
+headless, and its 1 GB RAM must accommodate NATS, Control, Cockpit, Datalogger,
+Nginx, Motion, and any enabled camera pipeline.
 
-The Cockpit gamepad page uses the standard Browser Gamepad API. It is supported on Windows and macOS by current Edge, Chrome, and Firefox releases; Safari also supports it on macOS. The controller must first be paired by the operating system and exposed as a standard HID/gamepad device.
+The provisioning script requires a Debian-based system with `apt-get`; it does
+not yet enforce a Pi model, operating-system release, or CPU-architecture
+check. The Pi 3B+ Trixie 64-bit combination is the target baseline, not yet
+clean-image or hardware bench validation. Record the architecture, OS release,
+RAM, package-install result, and hardware test evidence during first
+commissioning.
 
-Older Raspberry Pi models, Raspberry Pi OS Bullseye, 32-bit `armhf`, non-Debian ARM distributions, and non-Raspberry-Pi boards are not currently production-validated. Treat them as experimental until a clean-image installation and hardware test are recorded.
+Do not use Legacy 32-bit as the normal installation. It is a temporary,
+documented fallback only if a required and verified dependency cannot run on
+Trixie 64-bit. Record the blocker, the affected hardware capability, and the
+migration plan. A 32-bit `armhf` image is not the project baseline.
 
-For local development, serve the Cockpit from `localhost` or `127.0.0.1`. Remote deployments should use HTTPS. Firefox may require the user to press a controller button before the browser exposes the device to the page.
+Before provisioning, record:
 
-Gamepad input must be tested with propulsion disabled or disconnected. The system should use dead-man handling, neutral output on disconnect, an explicit arm state, and input timeouts; browser detection must not be the only motor safety mechanism.
+```zsh
+uname -m
+cat /etc/os-release
+getconf LONG_BIT
+free -h
+```
 
-## Cockpit authentication
-
-View-only Cockpit access is anonymous. Driver and administrator functions use the file-backed login system in `Configs/users.json`, with signed expiring session cookies. Drivers may change their own password; administrators may change their own and other configured account passwords. Set `COCKPIT_AUTH_SECRET` to a strong deployment-specific value and use HTTPS when the Cockpit is reachable beyond the local machine.
-
-## Windows bootstrap rationale
-
-The Windows workflow is deliberately portable and user-installable. It rejects UNC paths because local filesystem semantics are more predictable for Python environments and child processes. It downloads and verifies a project-local WinPython runtime so setup does not depend on system Python, registry state, administrator PATH changes, or administrator rights. It uses that runtime's `pip` instead of adding `uv` as another required bootstrap dependency.
-
-The installer still requires permission to write inside the chosen project directory and network access to the official WinPython and Python package hosts. It does not require elevation or system-wide software installation.
+Expected baseline: `aarch64`, Raspberry Pi OS based on Debian Trixie, and
+`64`. If a Pi 3B+ experiences memory pressure, reduce non-essential services
+or camera resolution/bitrate before relaxing safety behaviour or adding swap as
+a substitute for capacity.
 
 ## Platform rules
 
-- On Windows, use the project-local `runtime\python.exe` and `pip` against the shared `requirements.txt`; do not require `uv`.
-- On macOS/Linux, use `uv` to create `.venv` and install the same shared `requirements.txt`; no lockfile is required.
-- Keep platform-specific hardware access behind small adapters so the web layer remains portable.
-- Use stable Linux `/dev/serial/by-id/` paths where possible rather than `/dev/ttyUSB0`.
-- Treat any hardware path as `demo`, `simulated`, `bench tested`, or `production proven`; do not imply a stronger status than has been verified.
+- Use the active profile and logical NATS commands in non-Pi development.
+- Control alone owns physical mapping, sensor access, and actuator safety.
+- Use stable Linux `/dev/serial/by-id/` paths only after device discovery and
+  profile configuration.
+- Do not run connected propulsion tests from a development workstation.
+- Describe support as simulated, automated-test verified, bench-tested, or
+  production-validated only with the corresponding evidence.

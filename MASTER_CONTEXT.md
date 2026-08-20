@@ -93,7 +93,7 @@ On macOS, use a user-selected workspace beneath the home directory, for example:
 
 This is a documented convention only. Scripts must derive paths from their own location so that the repository remains movable.
 
-The production runtime is Raspberry Pi OS, based on the Raspberry Pi Foundation's supported Debian-based operating system.
+The production runtime is Raspberry Pi OS, based on the Raspberry Pi Foundation's supported Debian-based operating system. The selected baseline is Raspberry Pi OS Trixie Lite 64-bit (`arm64`) on a Raspberry Pi 3B+ or newer 64-bit model. This headless baseline preserves the Pi 3B+'s 1 GB RAM for the co-installed robot services. It is an intended, unbench-tested baseline until clean-image and physical commissioning evidence is recorded. Legacy 32-bit is a temporary compatibility fallback only when a specific verified dependency cannot use Trixie 64-bit.
 
 Windows and macOS are development environments. They are not the production hardware-control target.
 
@@ -336,6 +336,18 @@ The adapter consumes and publishes only profile-bound logical NATS commands
 and telemetry. Its full capability-to-topic contract is in
 `docs/adeept-robot-hat-adm133.md`; raw GPIO, I2C, PWM-channel, and
 motor-channel NATS subjects are prohibited.
+
+`docs/adeept-robot-hat-adm133-interfaces.md` is the port-level interface and
+commissioning guide. It distinguishes vendor-sample pin mappings from mappings
+that must still be verified on the fitted ADM133 board. Its source inventory is
+the supplied manufacturer V3 archive and Philip's ADM133 board notes; neither
+replaces recorded board-level commissioning evidence.
+
+ADM133 servo channels use stable physical aliases `servo-00` through
+`servo-15`. Robot profiles map semantic aliases, such as K9 `head-pan`, to
+those ports. The aliases are Control configuration, not Cockpit commands, and
+the vendor motor sample reserves channels `8–15` whenever the matching motor
+function is enabled.
 
 ---
 
@@ -720,6 +732,33 @@ Before robot or shared-network deployment:
 - never place service tokens or API keys in the shared robot profile.
 
 Example configuration files must contain safe placeholders only.
+
+---
+
+## Remote SSH verification access
+
+Remote command access is an optional operational aid for an active Codex task,
+not a route to unattended robot control. The maintained procedure is:
+
+```text
+docs/remote-ssh-access.md
+```
+
+When configured, each robot SHALL have a unique Zeroconf hostname, dedicated
+`codex` account, and unique Ed25519 SSH key. The key name and local SSH alias
+MUST identify the robot unambiguously, for example `k9` and
+`codex_robot_k9`. The private key MUST remain on the trusted operator computer
+and MUST NOT be committed, copied to SMB, or shared in chat.
+
+The `codex` account MUST use public-key authentication and begin without
+`sudo` authority. Routine actions are read-only checks. State-changing actions,
+including service restarts, network deployment, profile changes, and hardware
+access, require explicit operator authorisation. Direct public-Internet SSH
+exposure is prohibited; remote access requires a separately secured private
+network if needed.
+
+This access pattern is documented but has not been configured or Raspberry Pi
+bench-validated for a robot.
 
 ---
 

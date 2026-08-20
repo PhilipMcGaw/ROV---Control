@@ -26,11 +26,18 @@ The repository does not currently record physical propulsion, GPIO, serial-board
 - A shared Adeept Robot HAT ADM133 (V3.3 family) hardware adapter for K9 and
   PiWars. Profiles will define channel assignments and safe operating
   configuration after the installed-board map is confirmed; no physical
-  behaviour has been bench-validated.
+  behaviour has been bench-validated. The port-interface guide records
+  manufacturer V3 sample mappings and Philip's board observations separately
+  from mappings awaiting board-level verification.
+- Stable ADM133 `servo-00` through `servo-15` aliases and K9's semantic
+  `head-pan`/`head-tilt` profile allocations. The configuration contract is
+  automated-test verified; the physical wiring, motor-sharing behaviour, and
+  servo behaviour remain unbench-tested.
 - Bench validation of command limits, neutral, timeout, emergency-stop, and camera-pitch feedback.
 - Production validation on the intended Raspberry Pi and attached hardware.
 - Raspberry Pi bench validation of browser-assisted time synchronisation and the deployed `CAP_SYS_TIME` service capability.
-- Raspberry Pi bench validation of the NATS systemd override, NetworkManager Wi-Fi/hotspot failover, SMB sharing, and the complete provisioning sequence.
+- Raspberry Pi 3B+ Trixie Lite 64-bit bench validation of the NATS systemd override, NetworkManager Wi-Fi/hotspot failover, SMB sharing, and the complete provisioning sequence.
+- Per-robot SSH access for active-task remote verification. The least-privilege procedure is documented, but no `codex` account, SSH key, remote connection, or automated remote check has been configured or validated on a robot.
 
 ## Important references
 
