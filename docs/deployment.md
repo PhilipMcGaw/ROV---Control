@@ -4,7 +4,12 @@ Control is deployed beside Cockpit and Datalogger on the robot. The canonical in
 
 ## Initial robot provisioning
 
-Clone Cockpit, Control, and Datalogger as sibling repositories. Before running the Cockpit provisioner, create the ignored Control configuration files:
+Use Cockpit's [source-installation route](https://github.com/PhilipMcGaw/ROV---Cockpit/blob/main/docs/deployment.md#choose-a-source-installation-route)
+to retrieve Cockpit, Control, and Datalogger as sibling repositories. It
+provides a read-only HTTPS route for normal robot installations and a
+Pi-specific GitHub SSH route for Philip's developer pull/push work. Before
+running the Cockpit provisioner, create the ignored Control configuration
+files:
 
 ```zsh
 cd ~/robots/ROV---Control
